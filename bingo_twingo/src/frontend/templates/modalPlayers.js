@@ -3,7 +3,7 @@ import audio from '../audios/Bingo Sound Effect.mp3';
 import { app } from '../index.js';
 import { showModal, clearModal } from '../js/core/core';
 import '../css/modalPlayers.css';
-import { validation_user } from '../../../utils/validations.js'
+import { validation_user } from '../../common/validations.js'
 import { modalPlay } from './modalPlay.js';
 
 

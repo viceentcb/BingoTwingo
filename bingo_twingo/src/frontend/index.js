@@ -4,7 +4,9 @@ import './css/ingame.css';
 import { docReady, showModal, clearModal, debug } from './js/core/core.js';
 import './js/card.js';
 // import { Bombo } from './js/bombo.js';
-import { Bombo } from '../../utils/bombo.js';
+import { Bombo } from '../common/bombo.js';
+import { BomboOffline } from '../frontend/js/bombo_offline.js';
+import { BomboOnline } from '../backend/bombo_online.js';
 import { BingoCard } from './js/card.js';
 import { PubSub } from './js/core/pubSub.js';
 import { modalPlayers, setupAudioBingoWin } from './templates/modalPlayers.js';
@@ -22,6 +24,8 @@ const app = (() => {
     let myApp;
     const speed = 2000; //2 seconds
     let bombo;
+    let bombo_offline;
+    let bombo_online;
     let players = []
     let pubSub = new PubSub();
     let stateApp = "stop";
@@ -35,11 +39,12 @@ const app = (() => {
     /* Every time runs pick a ball from bombo bingo game */
     let getBallFromBombo = () => {
         /* Get a ball from bombo */
-        let num = bombo.pickNumber();
+
+        let num = bombo_offline.pickNumber();
 
         /* If num is a real number we inform all subscribers we have just picked a ball */
         if (num) {
-            pubSub.publish("New Number", bombo.getExtractedNumbers());
+            pubSub.publish("New Number", bombo_offline.getExtractedNumbers());
 
             /* otherwise means bombo is running out of ball and we should finish the game */
         } else {
@@ -55,28 +60,15 @@ const app = (() => {
     /* Start bingo play */
     let start = () => {
 
-        /* Basic template where we are going to render bingo play */
-        let doc = new DOMParser().parseFromString(`
-            <div class="gameLayout">
-                <div id="bingoCards" class="cards"></div>
-                <div class="panel">
-                    <div id="balls" class="balls__grid"></div>
-                </div>
-            </div>
-        `, 'text/html');
+        PanelRender(bombo)
 
-        let layout = doc.body.firstChild;
-        document.getElementById('main').appendChild(layout);
 
-        /* Layer where initial background video has been loaded we
-        need to remove it as we are going to start playing */
-        let videoEl = document.getElementById('videoBackground');
-        if (videoEl) videoEl.remove();
 
         /* Create publish/subscriber mechanism useful to be aware of some interesting bingo events like linia or bingo */
         pubSub = new PubSub();
-        /* Create and render empty bombo for our playing */
-        bombo = new Bombo(document.getElementById('balls'));
+        bombo_offline = new BomboOffline();
+
+
         /* Change app state from stop to run  */
         stateApp = "run";
 
@@ -142,24 +134,10 @@ const app = (() => {
 
     let online = () => {
 
-        let doc = new DOMParser().parseFromString(`
-        <div class="gameLayout">
-            <div id="bingoCards" class="cards"></div>
-            <div class="panel">
-                <div id="balls" class="balls__grid"></div>
-            </div>
-        </div>
-    `, 'text/html');
+        PanelRender(bombo)
 
 
-
-        let layout = doc.body.firstChild;
-        document.getElementById('main').appendChild(layout);
-        let videoEl = document.getElementById('videoBackground');
-        if (videoEl) videoEl.remove();
-
-        bombo = new Bombo(document.getElementById('balls'));
-
+        bombo_online = new BomboOnline();
 
         const socket = io('ws://localhost:8080', { transports: ['websocket'] });
         socket.on('connect', () => {
@@ -168,8 +146,7 @@ const app = (() => {
         });
 
         socket.on('new_number', function (data) {
-            console.log(data.num);
-            bombo.renderball(data.num)
+            bombo_online.renderball(data.num)
         });
 
     }
@@ -189,5 +166,26 @@ const app = (() => {
  when closed start bingo playing (callback) */
 docReady(() => showModal(modalPlayers(), app.start));
 
+let PanelRender=(bombo)=>{
+
+    let doc = new DOMParser().parseFromString(`
+    <div class="gameLayout">
+        <div id="bingoCards" class="cards"></div>
+        <div class="panel">
+            <div id="balls" class="balls__grid"></div>
+        </div>
+    </div>
+`, 'text/html');
+
+
+
+    let layout = doc.body.firstChild;
+    document.getElementById('main').appendChild(layout);
+    let videoEl = document.getElementById('videoBackground');
+    if (videoEl) videoEl.remove();
+
+    bombo = new Bombo(document.getElementById('balls'));
+    bombo.render()
+}
 
 export { app };

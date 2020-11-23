@@ -1,7 +1,7 @@
 import { showModal, clearModal } from '../js/core/core';
 import '../css/modalPlayers.css';
 import { modalPlayers } from './modalPlayers.js';
-import { validation_user } from '../../../utils/validations.js'
+import { validation_user } from '../../common/validations.js'
 import { app } from '../index.js';
 
 
